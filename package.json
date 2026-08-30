@@ -1,0 +1,20 @@
+{
+  "name": "discord-protect-bot",
+  "version": "1.0.0",
+  "description": "Bot de protection anti-raid / anti-nuke / anti-spam pour Discord",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "license": "MIT"
+}

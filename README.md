@@ -1,0 +1,67 @@
+# Discord Protect Bot
+
+Bot de protection anti-raid / anti-nuke / anti-spam pour Discord, conçu pour réagir en quelques secondes face à des attaques coordonnées (raid de masse, nuke de serveur, spam de webhooks/invitations).
+
+## Fonctionnalités
+
+- **Anti-Nuke** : surveille les journaux d'audit en temps réel (suppression/création de salons et rôles, bans, kicks, création de webhooks, ajout de bots, attribution du rôle Administrateur). Si un compte non whitelisté dépasse le seuil d'actions destructrices dans une fenêtre de temps, il est automatiquement sanctionné (retrait des rôles dangereux, kick ou ban selon la config).
+- **Anti-Raid** : détecte les vagues d'arrivées massives et déclenche un verrouillage automatique du serveur (fermeture de l'envoi de messages/connexion vocale, passage en vérification maximale). Les comptes trop récents créés pendant une vague sont expulsés.
+- **Anti-Spam** : limite le flood de messages, les spams de mentions, les messages dupliqués et les liens d'invitation non autorisés, avec sanction automatique (timeout/kick/ban).
+- **Panic Button** (`/panic`) : verrouille instantanément tout le serveur en une commande.
+- **Whitelist** : les admins de confiance (et les owners définis en `.env`) sont toujours exemptés des sanctions automatiques.
+- **Backup/Restore** : sauvegarde la structure des rôles et permet de restaurer rapidement après un incident.
+- **Logs de sécurité** : toutes les alertes sont envoyées dans un salon dédié et conservées en historique.
+
+## Installation
+
+```bash
+npm install
+cp .env.example .env
+```
+
+Renseigne dans `.env` :
+- `DISCORD_TOKEN` : token du bot (Developer Portal > Bot)
+- `CLIENT_ID` : ID de l'application
+- `GUILD_ID` : ID de ton serveur (déploiement instantané des commandes, recommandé)
+- `OWNER_IDS` : tes IDs Discord (séparés par des virgules) — toujours protégés
+
+### Permissions et intents requis
+
+Dans le Developer Portal, active les **Privileged Gateway Intents** :
+- Server Members Intent
+- Message Content Intent
+
+Invite le bot avec les permissions : Administrateur (recommandé pour un anti-nuke efficace), ou a minima : Gérer les rôles, Gérer les salons, Expulser/Bannir des membres, Gérer les webhooks, Gérer le serveur.
+
+### Déploiement des commandes slash
+
+```bash
+npm run deploy
+```
+
+### Lancement
+
+```bash
+npm start
+```
+
+## Commandes principales
+
+| Commande | Description |
+|---|---|
+| `/panic` | Verrouille immédiatement le serveur |
+| `/unlock` | Lève le verrouillage |
+| `/status` | Affiche l'état de la protection |
+| `/whitelist add/remove/list` | Gère les membres protégés |
+| `/setlogchannel` | Définit le salon des alertes |
+| `/config antinuke\|antiraid\|antispam` | Ajuste les seuils de détection |
+| `/backup` | Sauvegarde la structure du serveur |
+| `/restore` | Restaure les rôles depuis la dernière sauvegarde |
+
+## Conseils face à des attaquants expérimentés
+
+1. **Donne au bot un rôle très haut placé** (juste sous le tien) pour qu'il puisse retirer les permissions de comptes compromis avant qu'ils n'agissent.
+2. **Whitelist uniquement les comptes de confiance stricte** — chaque admin non whitelisté est surveillé par l'anti-nuke.
+3. **Active l'authentification à 2 facteurs obligatoire** pour la modération (Paramètres serveur > Modération).
+4. **Fais un `/backup` régulièrement**, surtout avant tout changement de structure important.
+5. **Active le mode panique préventivement** (`/panic`) si une attaque est annoncée, puis lève-le une fois la menace passée.
