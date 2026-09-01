@@ -3,7 +3,15 @@ import { store } from '../store.js';
 import { lockdownGuild, unlockGuild } from '../modules/antiRaid.js';
 import { createBackup, listBackups, restoreRoles } from '../modules/backup.js';
 import { getSnipe, getEditSnipe } from '../modules/snipe.js';
-import { purgeMessages, buildUserInfoEmbed, buildServerInfoEmbed } from '../modules/moderation.js';
+import {
+  purgeMessages,
+  buildUserInfoEmbed,
+  buildServerInfoEmbed,
+  setChannelLocked,
+  setChannelSlowmode
+} from '../modules/moderation.js';
+import { buildVerificationMessage } from '../modules/verification.js';
+import { setRequire2FA } from '../modules/security.js';
 import { canManageBot } from '../utils/permissions.js';
 
 const PREFIX = '*';
@@ -45,6 +53,36 @@ const HELP_PAGES = [
       { cmd: '*ping', desc: 'Affiche la latence du bot' },
       { cmd: '*help', alias: '*h', desc: 'Affiche cette aide' }
     ]
+  },
+  {
+    title: '⚠️ Avertissements',
+    entries: [
+      { cmd: '*warn @membre <raison>', alias: '*w', desc: 'Ajoute un avertissement à un membre' },
+      { cmd: '*warnings @membre', alias: '*ws', desc: 'Liste les avertissements d\'un membre' },
+      { cmd: '*clearwarns @membre', alias: '*cw', desc: 'Efface les avertissements d\'un membre' }
+    ]
+  },
+  {
+    title: '🕵️ Sécurité avancée',
+    entries: [
+      { cmd: '*antialt on/off', alias: '*aa', desc: 'Kick/ban les comptes trop récents ou sans avatar' },
+      { cmd: '*antiphishing on/off', alias: '*ap', desc: 'Détecte et bloque les liens de phishing' },
+      { cmd: '*require2fa on/off', alias: '*2fa', desc: 'Exige la 2FA pour les actions de modération' },
+      { cmd: '*verify #salon @role_non_vérifié [@role_membre]', alias: '*v', desc: 'Met en place la vérification à l\'arrivée' }
+    ]
+  },
+  {
+    title: '⚙️ Serveur',
+    entries: [
+      { cmd: '*welcome #salon <message>', alias: '*wc', desc: 'Active un message de bienvenue ({user}, {server})' },
+      { cmd: '*welcome off', desc: 'Désactive le message de bienvenue' },
+      { cmd: '*leave #salon <message>', alias: '*lv', desc: 'Active un message de départ' },
+      { cmd: '*autorole @role', alias: '*ar', desc: 'Attribue un rôle automatiquement à l\'arrivée' },
+      { cmd: '*lockchannel [#salon]', alias: '*lc', desc: 'Verrouille un salon précis' },
+      { cmd: '*unlockchannel [#salon]', alias: '*ulc', desc: 'Déverrouille un salon précis' },
+      { cmd: '*slowmode <secondes> [#salon]', alias: '*sm', desc: 'Définit le mode lent d\'un salon' },
+      { cmd: '*stats', alias: '*st', desc: 'Statistiques du serveur (arrivées/départs, warns...)' }
+    ]
   }
 ];
 
@@ -71,7 +109,21 @@ const ALIASES = {
   whois: 'userinfo',
   si: 'serverinfo',
   av: 'avatar',
-  h: 'help'
+  h: 'help',
+  w: 'warn',
+  ws: 'warnings',
+  cw: 'clearwarns',
+  aa: 'antialt',
+  ap: 'antiphishing',
+  '2fa': 'require2fa',
+  v: 'verify',
+  wc: 'welcome',
+  lv: 'leave',
+  ar: 'autorole',
+  lc: 'lockchannel',
+  ulc: 'unlockchannel',
+  sm: 'slowmode',
+  st: 'stats'
 };
 
 function usageError(message, text) {
@@ -377,6 +429,222 @@ export async function handlePrefixCommand(message) {
 
     case 'ping': {
       await message.reply(`🏓 Pong ! Latence WebSocket : ${message.client.ws.ping}ms`);
+      break;
+    }
+
+    case 'warn': {
+      const target = message.mentions.users.first();
+      const reason = args.slice(1).join(' ');
+      if (!target || !reason) {
+        await usageError(message, 'Usage : `*warn @membre <raison>`');
+        break;
+      }
+      const warn = store.addWarn(guild.id, { userId: target.id, moderatorId: author.id, reason });
+      const total = store.getWarns(guild.id, target.id).length;
+      await message.reply(`⚠️ <@${target.id}> averti (total : ${total}). Raison : ${reason} \`(#${warn.id})\``);
+      break;
+    }
+
+    case 'warnings': {
+      const target = message.mentions.users.first() ?? author;
+      const warns = store.getWarns(guild.id, target.id);
+      if (!warns.length) {
+        await message.reply(`✅ <@${target.id}> n'a aucun avertissement.`);
+        break;
+      }
+      const embed = new EmbedBuilder()
+        .setTitle(`Avertissements de ${target.tag} (${warns.length})`)
+        .setColor(0xf5a623)
+        .addFields(
+          warns.slice(0, 20).map((w) => ({
+            name: `#${w.id} — <t:${Math.floor(w.at / 1000)}:R>`,
+            value: `${w.reason} (par <@${w.moderatorId}>)`
+          }))
+        );
+      await message.reply({ embeds: [embed] });
+      break;
+    }
+
+    case 'clearwarns': {
+      const target = message.mentions.users.first();
+      if (!target) {
+        await usageError(message, 'Mentionne un membre : `*clearwarns @membre`');
+        break;
+      }
+      const removed = store.clearWarns(guild.id, target.id);
+      await message.reply(`✅ ${removed} avertissement(s) effacé(s) pour <@${target.id}>.`);
+      break;
+    }
+
+    case 'antialt': {
+      const state = args[0]?.toLowerCase();
+      if (!['on', 'off'].includes(state)) {
+        await usageError(message, 'Usage : `*antialt on` ou `*antialt off`');
+        break;
+      }
+      store.update(guild.id, (g) => {
+        g.antiAlt.enabled = state === 'on';
+      });
+      await message.reply(`✅ Anti-Alt ${state === 'on' ? 'activé' : 'désactivé'}.`);
+      break;
+    }
+
+    case 'antiphishing': {
+      const state = args[0]?.toLowerCase();
+      if (!['on', 'off'].includes(state)) {
+        await usageError(message, 'Usage : `*antiphishing on` ou `*antiphishing off`');
+        break;
+      }
+      store.update(guild.id, (g) => {
+        g.antiPhishing.enabled = state === 'on';
+      });
+      await message.reply(`✅ Anti-Phishing ${state === 'on' ? 'activé' : 'désactivé'}.`);
+      break;
+    }
+
+    case 'require2fa': {
+      const state = args[0]?.toLowerCase();
+      if (!['on', 'off'].includes(state)) {
+        await usageError(message, 'Usage : `*require2fa on` ou `*require2fa off`');
+        break;
+      }
+      const result = await setRequire2FA(guild, state === 'on');
+      if (result.ok) {
+        await message.reply(`✅ 2FA obligatoire pour la modération : ${state === 'on' ? 'activée' : 'désactivée'}.`);
+      } else {
+        await message.reply(
+          `⚠️ Discord n'autorise pas le bot à changer ce réglage automatiquement (limitation de l'API). ` +
+            `Active-le manuellement : **Paramètres du serveur > Sûreté > Authentification à deux facteurs pour la modération**.`
+        );
+      }
+      break;
+    }
+
+    case 'verify': {
+      const channel = message.mentions.channels.first();
+      const roles = [...message.mentions.roles.values()];
+      const unverifiedRole = roles[0];
+      const memberRole = roles[1];
+      if (!channel || !unverifiedRole) {
+        await usageError(message, 'Usage : `*verify #salon @role_non_vérifié [@role_membre]`');
+        break;
+      }
+      store.update(guild.id, (g) => {
+        g.verification.enabled = true;
+        g.verification.channelId = channel.id;
+        g.verification.unverifiedRoleId = unverifiedRole.id;
+        g.verification.memberRoleId = memberRole?.id ?? null;
+      });
+      await channel.send(buildVerificationMessage(guild)).catch(() => null);
+      await message.reply(`✅ Vérification activée dans <#${channel.id}>. Nouveaux membres → rôle <@&${unverifiedRole.id}>.`);
+      break;
+    }
+
+    case 'welcome': {
+      if (args[0]?.toLowerCase() === 'off') {
+        store.update(guild.id, (g) => {
+          g.welcome.enabled = false;
+        });
+        await message.reply('✅ Message de bienvenue désactivé.');
+        break;
+      }
+      const channel = message.mentions.channels.first();
+      const text = args.slice(1).join(' ');
+      if (!channel || !text) {
+        await usageError(message, 'Usage : `*welcome #salon <message>` (variables : {user}, {server}) ou `*welcome off`');
+        break;
+      }
+      store.update(guild.id, (g) => {
+        g.welcome.enabled = true;
+        g.welcome.channelId = channel.id;
+        g.welcome.message = text;
+      });
+      await message.reply(`✅ Message de bienvenue activé dans <#${channel.id}>.`);
+      break;
+    }
+
+    case 'leave': {
+      if (args[0]?.toLowerCase() === 'off') {
+        store.update(guild.id, (g) => {
+          g.welcome.leaveEnabled = false;
+        });
+        await message.reply('✅ Message de départ désactivé.');
+        break;
+      }
+      const channel = message.mentions.channels.first();
+      const text = args.slice(1).join(' ');
+      if (!channel || !text) {
+        await usageError(message, 'Usage : `*leave #salon <message>` (variables : {user}, {server}) ou `*leave off`');
+        break;
+      }
+      store.update(guild.id, (g) => {
+        g.welcome.leaveEnabled = true;
+        g.welcome.leaveChannelId = channel.id;
+        g.welcome.leaveMessage = text;
+      });
+      await message.reply(`✅ Message de départ activé dans <#${channel.id}>.`);
+      break;
+    }
+
+    case 'autorole': {
+      if (args[0]?.toLowerCase() === 'off') {
+        store.update(guild.id, (g) => {
+          g.welcome.autoRoleId = null;
+        });
+        await message.reply('✅ Auto-role désactivé.');
+        break;
+      }
+      const role = message.mentions.roles.first();
+      if (!role) {
+        await usageError(message, 'Usage : `*autorole @role` ou `*autorole off`');
+        break;
+      }
+      store.update(guild.id, (g) => {
+        g.welcome.autoRoleId = role.id;
+      });
+      await message.reply(`✅ Nouveaux membres recevront automatiquement <@&${role.id}>.`);
+      break;
+    }
+
+    case 'lockchannel': {
+      const channel = message.mentions.channels.first() ?? message.channel;
+      await setChannelLocked(channel, true, `Verrouillé par ${author.tag}`);
+      await message.reply(`🔒 <#${channel.id}> verrouillé.`);
+      break;
+    }
+
+    case 'unlockchannel': {
+      const channel = message.mentions.channels.first() ?? message.channel;
+      await setChannelLocked(channel, false, `Déverrouillé par ${author.tag}`);
+      await message.reply(`🔓 <#${channel.id}> déverrouillé.`);
+      break;
+    }
+
+    case 'slowmode': {
+      const seconds = parseInt(args[0], 10);
+      const channel = message.mentions.channels.first() ?? message.channel;
+      if (Number.isNaN(seconds) || seconds < 0) {
+        await usageError(message, 'Usage : `*slowmode <secondes 0-21600> [#salon]`');
+        break;
+      }
+      await setChannelSlowmode(channel, seconds);
+      await message.reply(seconds === 0 ? `✅ Mode lent désactivé sur <#${channel.id}>.` : `✅ Mode lent réglé à ${seconds}s sur <#${channel.id}>.`);
+      break;
+    }
+
+    case 'stats': {
+      const cfg = store.guild(guild.id);
+      const embed = new EmbedBuilder()
+        .setTitle(`Statistiques — ${guild.name}`)
+        .setColor(0x5865f2)
+        .addFields(
+          { name: 'Arrivées (aujourd\'hui)', value: `${cfg.stats.joins}`, inline: true },
+          { name: 'Départs (aujourd\'hui)', value: `${cfg.stats.leaves}`, inline: true },
+          { name: 'Membres', value: `${guild.memberCount}`, inline: true },
+          { name: 'Avertissements enregistrés', value: `${cfg.warns.length}`, inline: true },
+          { name: 'Incidents de sécurité loggés', value: `${cfg.incidents.length}`, inline: true }
+        );
+      await message.reply({ embeds: [embed] });
       break;
     }
 

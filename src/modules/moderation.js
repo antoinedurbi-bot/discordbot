@@ -31,6 +31,14 @@ export async function purgeMessages(channel, { amount = 50, userId = null, all =
   return totalDeleted;
 }
 
+export async function setChannelLocked(channel, locked, reason) {
+  await channel.permissionOverwrites.edit(channel.guild.roles.everyone, { SendMessages: locked ? false : null }, { reason });
+}
+
+export async function setChannelSlowmode(channel, seconds) {
+  await channel.setRateLimitPerUser(Math.min(Math.max(seconds, 0), 21600));
+}
+
 export function buildUserInfoEmbed(member) {
   const user = member.user;
   return new EmbedBuilder()

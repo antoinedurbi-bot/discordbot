@@ -36,9 +36,57 @@ function guildDefaults() {
       duplicateThreshold: 4,
       punishment: 'timeout' // 'timeout' | 'kick' | 'ban'
     },
+    antiAlt: {
+      enabled: false, // opt-in : peut gêner des membres légitimes si trop strict
+      minAccountAgeMs: 1000 * 60 * 60 * 24, // 1 jour
+      requireAvatar: true,
+      punishment: 'kick' // 'kick' | 'ban'
+    },
+    antiPhishing: {
+      enabled: true,
+      punishment: 'ban' // 'timeout' | 'kick' | 'ban'
+    },
+    verification: {
+      enabled: false,
+      channelId: null,
+      unverifiedRoleId: null,
+      memberRoleId: null
+    },
+    welcome: {
+      enabled: false,
+      channelId: null,
+      message: 'Bienvenue {user} sur **{server}** ! 🎉',
+      autoRoleId: null,
+      leaveEnabled: false,
+      leaveChannelId: null,
+      leaveMessage: '{user} a quitté le serveur. 👋'
+    },
+    stats: {
+      date: null,
+      joins: 0,
+      leaves: 0
+    },
+    warns: [], // { id, userId, moderatorId, reason, at }
     backups: [],
     incidents: []
   };
+}
+
+function mergeDefaults(target, defaults) {
+  for (const key of Object.keys(defaults)) {
+    if (target[key] === undefined) {
+      target[key] = defaults[key];
+    } else if (
+      typeof defaults[key] === 'object' &&
+      defaults[key] !== null &&
+      !Array.isArray(defaults[key]) &&
+      typeof target[key] === 'object' &&
+      target[key] !== null
+    ) {
+      mergeDefaults(target[key], defaults[key]);
+    }
+  }
+  return target;
 }
 
 class Store {
@@ -64,8 +112,10 @@ class Store {
     if (!this.data.guilds[guildId]) {
       this.data.guilds[guildId] = guildDefaults();
       this._save();
+      return this.data.guilds[guildId];
     }
-    return this.data.guilds[guildId];
+    const merged = mergeDefaults(this.data.guilds[guildId], guildDefaults());
+    return merged;
   }
 
   update(guildId, mutator) {
@@ -86,6 +136,38 @@ class Store {
     const g = this.guild(guildId);
     g.backups.unshift(backup);
     g.backups = g.backups.slice(0, 5);
+    this._save();
+  }
+
+  addWarn(guildId, { userId, moderatorId, reason }) {
+    const g = this.guild(guildId);
+    const warn = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), userId, moderatorId, reason, at: Date.now() };
+    g.warns.push(warn);
+    this._save();
+    return warn;
+  }
+
+  getWarns(guildId, userId) {
+    return this.guild(guildId).warns.filter((w) => w.userId === userId);
+  }
+
+  clearWarns(guildId, userId) {
+    const g = this.guild(guildId);
+    const before = g.warns.length;
+    g.warns = g.warns.filter((w) => w.userId !== userId);
+    this._save();
+    return before - g.warns.length;
+  }
+
+  bumpStat(guildId, key) {
+    const g = this.guild(guildId);
+    const today = new Date().toISOString().slice(0, 10);
+    if (g.stats.date !== today) {
+      g.stats.date = today;
+      g.stats.joins = 0;
+      g.stats.leaves = 0;
+    }
+    g.stats[key] += 1;
     this._save();
   }
 }

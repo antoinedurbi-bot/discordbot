@@ -7,9 +7,17 @@ Bot de protection anti-raid / anti-nuke / anti-spam pour Discord, conçu pour r�
 - **Anti-Nuke** : surveille les journaux d'audit en temps réel (suppression/création de salons et rôles, bans, kicks, création de webhooks, ajout de bots, attribution du rôle Administrateur). Si un compte non whitelisté dépasse le seuil d'actions destructrices dans une fenêtre de temps, il est automatiquement sanctionné (retrait des rôles dangereux, kick ou ban selon la config).
 - **Anti-Raid** : détecte les vagues d'arrivées massives et déclenche un verrouillage automatique du serveur (fermeture de l'envoi de messages/connexion vocale, passage en vérification maximale). Les comptes trop récents créés pendant une vague sont expulsés.
 - **Anti-Spam** : limite le flood de messages, les spams de mentions, les messages dupliqués et les liens d'invitation non autorisés, avec sanction automatique (timeout/kick/ban).
+- **Anti-Alt** (opt-in) : filtre à l'arrivée les comptes trop récents et/ou sans avatar personnalisé.
+- **Anti-Phishing** : détecte et bloque les liens de phishing connus (faux Nitro, faux Steam...) avec sanction automatique.
+- **Vérification à l'arrivée** : bouton "Je ne suis pas un bot" avant d'accéder au serveur (rôle non-vérifié → rôle membre).
 - **Panic Button** (`/panic`) : verrouille instantanément tout le serveur en une commande.
 - **Whitelist** : les admins de confiance (et les owners définis en `.env`) sont toujours exemptés des sanctions automatiques.
 - **Backup/Restore** : sauvegarde la structure des rôles et permet de restaurer rapidement après un incident.
+- **Avertissements** : système de warns persistant par membre, avec historique consultable.
+- **Bienvenue/Départ & Auto-role** : messages personnalisables et attribution automatique de rôle à l'arrivée.
+- **Modération de salon** : lock/unlock et slowmode ciblés sur un salon précis.
+- **Snipe** : retrouve le dernier message supprimé/édité d'un salon.
+- **Statistiques** : arrivées/départs du jour, nombre de warns et d'incidents de sécurité.
 - **Logs de sécurité** : toutes les alertes sont envoyées dans un salon dédié et conservées en historique.
 
 ## Installation
@@ -71,7 +79,21 @@ Les commandes sont disponibles en **slash `/`** et en **préfixe `*`** (avec ali
 | `*serverinfo` | `*si` | Infos du serveur |
 | `*avatar [@membre]` | `*av` | Affiche l'avatar en grand |
 | `*ping` | — | Latence du bot |
-| `*help` | `*h` | Liste toutes les commandes |
+| `*warn @membre <raison>` | `*w` | Ajoute un avertissement |
+| `*warnings @membre` | `*ws` | Liste les avertissements |
+| `*clearwarns @membre` | `*cw` | Efface les avertissements |
+| `*antialt on\|off` | `*aa` | Filtre les comptes suspects à l'arrivée |
+| `*antiphishing on\|off` | `*ap` | Active/désactive la détection de phishing |
+| `*require2fa on\|off` | `*2fa` | Exige la 2FA pour la modération (si l'API l'autorise) |
+| `*verify #salon @role_non_vérifié [@role_membre]` | `*v` | Met en place la vérification à l'arrivée |
+| `*welcome #salon <message>` \| `*welcome off` | `*wc` | Message de bienvenue ({user}, {server}) |
+| `*leave #salon <message>` \| `*leave off` | `*lv` | Message de départ |
+| `*autorole @role` \| `*autorole off` | `*ar` | Rôle automatique à l'arrivée |
+| `*lockchannel [#salon]` | `*lc` | Verrouille un salon précis |
+| `*unlockchannel [#salon]` | `*ulc` | Déverrouille un salon précis |
+| `*slowmode <secondes> [#salon]` | `*sm` | Définit le mode lent d'un salon |
+| `*stats` | `*st` | Statistiques du serveur |
+| `*help` | `*h` | Liste paginée de toutes les commandes |
 
 ## Conseils face à des attaquants expérimentés
 
