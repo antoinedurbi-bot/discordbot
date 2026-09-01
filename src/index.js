@@ -4,6 +4,7 @@ import { registerAntiNuke } from './modules/antiNuke.js';
 import { registerAntiRaid } from './modules/antiRaid.js';
 import { registerAntiSpam } from './modules/antiSpam.js';
 import { handleInteraction } from './commands/index.js';
+import { handlePrefixCommand } from './commands/prefix.js';
 import { store } from './store.js';
 
 const { DISCORD_TOKEN } = process.env;
@@ -31,6 +32,13 @@ registerAntiSpam(client);
 
 client.on('interactionCreate', (interaction) => {
   handleInteraction(interaction).catch((err) => console.error('Erreur interaction:', err));
+});
+
+client.on('messageCreate', (message) => {
+  if (message.author.bot || !message.guild) return;
+  if (message.content.startsWith('*')) {
+    handlePrefixCommand(message).catch((err) => console.error('Erreur prefix command:', err));
+  }
 });
 
 client.once('clientReady', () => {
