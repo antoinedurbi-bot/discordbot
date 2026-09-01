@@ -1,9 +1,34 @@
 import { EmbedBuilder } from 'discord.js';
 
-export async function purgeMessages(channel, amount) {
-  const deletable = Math.min(Math.max(amount, 1), 100);
-  const deleted = await channel.bulkDelete(deletable, true).catch(() => null);
-  return deleted?.size ?? 0;
+// Supprime des messages du salon. options: { amount } | { all: true } | { userId, amount? }
+// Pagine en arrière (before) sur des lots de 100 pour couvrir *clear all et *clear @membre.
+export async function purgeMessages(channel, { amount = 50, userId = null, all = false } = {}) {
+  let totalDeleted = 0;
+  let before;
+  let remaining = all ? Infinity : amount;
+  const maxIterations = 15; // garde-fou contre le rate-limit sur de très longs historiques
+
+  for (let i = 0; i < maxIterations && remaining > 0; i += 1) {
+    const fetched = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
+    if (!fetched || fetched.size === 0) break;
+
+    before = fetched.last().id;
+
+    let candidates = [...fetched.values()];
+    if (userId) candidates = candidates.filter((m) => m.author.id === userId);
+    if (!all) candidates = candidates.slice(0, remaining);
+
+    if (candidates.length) {
+      const deleted = await channel.bulkDelete(candidates, true).catch(() => null);
+      const count = deleted?.size ?? 0;
+      totalDeleted += count;
+      remaining -= count;
+    }
+
+    if (fetched.size < 100) break; // fin de l'historique du salon
+  }
+
+  return totalDeleted;
 }
 
 export function buildUserInfoEmbed(member) {

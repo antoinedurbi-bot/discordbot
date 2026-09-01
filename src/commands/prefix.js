@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { store } from '../store.js';
 import { lockdownGuild, unlockGuild } from '../modules/antiRaid.js';
 import { createBackup, listBackups, restoreRoles } from '../modules/backup.js';
@@ -8,27 +8,44 @@ import { canManageBot } from '../utils/permissions.js';
 
 const PREFIX = '*';
 
-const HELP_ENTRIES = [
-  { cmd: '*panic', alias: '*p', desc: 'Verrouille immédiatement tout le serveur' },
-  { cmd: '*unlock', alias: '*u', desc: 'Lève le verrouillage d\'urgence' },
-  { cmd: '*status', alias: '*s', desc: 'Affiche l\'état de la protection' },
-  { cmd: '*whitelist add/remove/list @membre', alias: '*wl', desc: 'Gère les membres protégés' },
-  { cmd: '*setlog #salon', alias: '*log', desc: 'Définit le salon des alertes de sécurité' },
-  { cmd: '*backup', alias: '*bk', desc: 'Sauvegarde la structure du serveur (rôles/salons)' },
-  { cmd: '*restore', alias: '*rs', desc: 'Restaure les rôles depuis la dernière sauvegarde' },
-  { cmd: '*snipe', alias: '*sn', desc: 'Affiche le dernier message supprimé du salon' },
-  { cmd: '*editsnipe', alias: '*es', desc: 'Affiche le dernier message édité du salon' },
-  { cmd: '*clear <nombre>', alias: '*c', desc: 'Supprime en masse des messages (max 100)' },
-  { cmd: '*kick @membre [raison]', alias: '*k', desc: 'Expulse un membre' },
-  { cmd: '*ban @membre [raison]', alias: '*b', desc: 'Bannit un membre' },
-  { cmd: '*unban <id>', alias: '*ub', desc: 'Débannit un utilisateur via son ID' },
-  { cmd: '*mute @membre <minutes> [raison]', alias: '*m', desc: 'Timeout un membre' },
-  { cmd: '*unmute @membre', alias: '*um', desc: 'Retire le timeout d\'un membre' },
-  { cmd: '*userinfo [@membre]', alias: '*ui', desc: 'Affiche les infos d\'un membre' },
-  { cmd: '*serverinfo', alias: '*si', desc: 'Affiche les infos du serveur' },
-  { cmd: '*avatar [@membre]', alias: '*av', desc: 'Affiche l\'avatar en grand' },
-  { cmd: '*ping', desc: 'Affiche la latence du bot' },
-  { cmd: '*help', alias: '*h', desc: 'Affiche cette aide' }
+const HELP_PAGES = [
+  {
+    title: '🛡️ Protection',
+    entries: [
+      { cmd: '*panic', alias: '*p', desc: 'Verrouille immédiatement tout le serveur' },
+      { cmd: '*unlock', alias: '*u', desc: 'Lève le verrouillage d\'urgence' },
+      { cmd: '*status', alias: '*s', desc: 'Affiche l\'état de la protection' },
+      { cmd: '*whitelist add/remove/list @membre', alias: '*wl', desc: 'Gère les membres protégés' },
+      { cmd: '*setlog #salon', alias: '*log', desc: 'Définit le salon des alertes de sécurité' },
+      { cmd: '*backup', alias: '*bk', desc: 'Sauvegarde la structure du serveur (rôles/salons)' },
+      { cmd: '*restore', alias: '*rs', desc: 'Restaure les rôles depuis la dernière sauvegarde' }
+    ]
+  },
+  {
+    title: '🔨 Modération',
+    entries: [
+      { cmd: '*clear <nombre>', alias: '*c', desc: 'Supprime N derniers messages' },
+      { cmd: '*clear all', alias: '*c all', desc: 'Supprime tout l\'historique récent du salon' },
+      { cmd: '*clear @membre [nombre]', alias: '*c @membre', desc: 'Supprime les messages d\'un membre' },
+      { cmd: '*kick @membre [raison]', alias: '*k', desc: 'Expulse un membre' },
+      { cmd: '*ban @membre [raison]', alias: '*b', desc: 'Bannit un membre' },
+      { cmd: '*unban <id>', alias: '*ub', desc: 'Débannit un utilisateur via son ID' },
+      { cmd: '*mute @membre <minutes> [raison]', alias: '*m', desc: 'Timeout un membre' },
+      { cmd: '*unmute @membre', alias: '*um', desc: 'Retire le timeout d\'un membre' }
+    ]
+  },
+  {
+    title: '🔍 Snipe & Infos',
+    entries: [
+      { cmd: '*snipe', alias: '*sn', desc: 'Affiche le dernier message supprimé du salon' },
+      { cmd: '*editsnipe', alias: '*es', desc: 'Affiche le dernier message édité du salon' },
+      { cmd: '*userinfo [@membre]', alias: '*ui', desc: 'Affiche les infos d\'un membre' },
+      { cmd: '*serverinfo', alias: '*si', desc: 'Affiche les infos du serveur' },
+      { cmd: '*avatar [@membre]', alias: '*av', desc: 'Affiche l\'avatar en grand' },
+      { cmd: '*ping', desc: 'Affiche la latence du bot' },
+      { cmd: '*help', alias: '*h', desc: 'Affiche cette aide' }
+    ]
+  }
 ];
 
 const ALIASES = {
@@ -61,6 +78,27 @@ function usageError(message, text) {
   return message.reply(`❌ ${text}`);
 }
 
+function buildHelpEmbed(pageIndex) {
+  const page = HELP_PAGES[pageIndex];
+  return new EmbedBuilder()
+    .setTitle(page.title)
+    .setColor(0x5865f2)
+    .setDescription('Préfixe : `*` — les commandes slash `/` fonctionnent aussi.')
+    .addFields(page.entries.map((e) => ({ name: `${e.cmd}${e.alias ? `  •  ${e.alias}` : ''}`, value: e.desc })))
+    .setFooter({ text: `Page ${pageIndex + 1}/${HELP_PAGES.length}` });
+}
+
+function buildHelpRow(pageIndex) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('help_prev').setEmoji('⬅️').setStyle(ButtonStyle.Secondary).setDisabled(pageIndex === 0),
+    new ButtonBuilder()
+      .setCustomId('help_next')
+      .setEmoji('➡️')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(pageIndex === HELP_PAGES.length - 1)
+  );
+}
+
 export async function handlePrefixCommand(message) {
   const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
   let command = args.shift()?.toLowerCase();
@@ -71,17 +109,26 @@ export async function handlePrefixCommand(message) {
   if (!guild || !member) return;
 
   if (command === 'help') {
-    const embed = new EmbedBuilder()
-      .setTitle('🛡️ Commandes de protection')
-      .setColor(0x5865f2)
-      .setDescription('Préfixe : `*` — les commandes slash `/` fonctionnent aussi.')
-      .addFields(
-        HELP_ENTRIES.map((e) => ({
-          name: `${e.cmd}  •  ${e.alias}`,
-          value: e.desc
-        }))
-      );
-    await message.reply({ embeds: [embed] });
+    let pageIndex = 0;
+    const reply = await message.reply({ embeds: [buildHelpEmbed(pageIndex)], components: [buildHelpRow(pageIndex)] });
+
+    const collector = reply.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      time: 120_000
+    });
+
+    collector.on('collect', async (interaction) => {
+      if (interaction.user.id !== author.id) {
+        await interaction.reply({ content: '❌ Seule la personne ayant lancé `*help` peut naviguer.', ephemeral: true });
+        return;
+      }
+      pageIndex = interaction.customId === 'help_next' ? Math.min(HELP_PAGES.length - 1, pageIndex + 1) : Math.max(0, pageIndex - 1);
+      await interaction.update({ embeds: [buildHelpEmbed(pageIndex)], components: [buildHelpRow(pageIndex)] });
+    });
+
+    collector.on('end', () => {
+      reply.edit({ components: [] }).catch(() => null);
+    });
     return;
   }
 
@@ -211,13 +258,32 @@ export async function handlePrefixCommand(message) {
     }
 
     case 'clear': {
-      const amount = parseInt(args[0], 10);
-      if (!amount || amount < 1) {
-        await usageError(message, 'Usage : `*clear <nombre entre 1 et 100>`');
-        break;
+      const first = args[0];
+      const mentioned = message.mentions.users.first();
+      let opts;
+      let label;
+
+      if (mentioned) {
+        const amount = parseInt(args[1], 10);
+        opts = { userId: mentioned.id, amount: amount && amount > 0 ? amount : Infinity };
+        label = `de <@${mentioned.id}>`;
+      } else if (first?.toLowerCase() === 'all') {
+        opts = { all: true };
+        label = 'tout l\'historique récent';
+      } else {
+        const amount = parseInt(first, 10);
+        if (!amount || amount < 1) {
+          await usageError(message, 'Usage : `*clear <nombre>` | `*clear all` | `*clear @membre [nombre]`');
+          break;
+        }
+        opts = { amount };
+        label = `${amount} message(s)`;
       }
-      const deleted = await purgeMessages(message.channel, amount + 1); // +1 pour inclure la commande elle-même
-      await message.channel.send(`✅ ${deleted - 1} message(s) supprimé(s).`).then((m) => setTimeout(() => m.delete().catch(() => null), 4000));
+
+      await message.delete().catch(() => null);
+      const deleted = await purgeMessages(message.channel, opts);
+      const confirm = await message.channel.send(`✅ ${deleted} message(s) supprimé(s) (${label}).`);
+      setTimeout(() => confirm.delete().catch(() => null), 4000);
       break;
     }
 
