@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import { registerAntiNuke } from './modules/antiNuke.js';
 import { registerAntiRaid } from './modules/antiRaid.js';
 import { registerAntiSpam } from './modules/antiSpam.js';
+import { registerSnipe } from './modules/snipe.js';
 import { handleInteraction } from './commands/index.js';
 import { handlePrefixCommand } from './commands/prefix.js';
 import { store } from './store.js';
@@ -29,6 +30,7 @@ const client = new Client({
 registerAntiNuke(client);
 registerAntiRaid(client);
 registerAntiSpam(client);
+registerSnipe(client);
 
 client.on('interactionCreate', (interaction) => {
   handleInteraction(interaction).catch((err) => console.error('Erreur interaction:', err));

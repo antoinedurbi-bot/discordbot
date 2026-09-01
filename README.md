@@ -47,16 +47,31 @@ npm start
 
 ## Commandes principales
 
-| Commande | Description |
-|---|---|
-| `/panic` | Verrouille immédiatement le serveur |
-| `/unlock` | Lève le verrouillage |
-| `/status` | Affiche l'état de la protection |
-| `/whitelist add/remove/list` | Gère les membres protégés |
-| `/setlogchannel` | Définit le salon des alertes |
-| `/config antinuke\|antiraid\|antispam` | Ajuste les seuils de détection |
-| `/backup` | Sauvegarde la structure du serveur |
-| `/restore` | Restaure les rôles depuis la dernière sauvegarde |
+Les commandes sont disponibles en **slash `/`** et en **préfixe `*`** (avec alias courts).
+
+| Commande | Alias | Description |
+|---|---|---|
+| `/panic` \| `*panic` | `*p` | Verrouille immédiatement le serveur |
+| `/unlock` \| `*unlock` | `*u` | Lève le verrouillage |
+| `/status` \| `*status` | `*s` | Affiche l'état de la protection |
+| `/whitelist add/remove/list` \| `*whitelist` | `*wl` | Gère les membres protégés |
+| `/setlogchannel` \| `*setlog` | `*log` | Définit le salon des alertes |
+| `/config antinuke\|antiraid\|antispam` | — | Ajuste les seuils de détection |
+| `/backup` \| `*backup` | `*bk` | Sauvegarde la structure du serveur |
+| `/restore` \| `*restore` | `*rs` | Restaure les rôles depuis la dernière sauvegarde |
+| `*snipe` | `*sn` | Affiche le dernier message supprimé du salon |
+| `*editsnipe` | `*es` | Affiche le dernier message édité du salon |
+| `*clear <n>` | `*c` | Supprime en masse jusqu'à 100 messages |
+| `*kick @membre [raison]` | `*k` | Expulse un membre |
+| `*ban @membre [raison]` | `*b` | Bannit un membre |
+| `*unban <id>` | `*ub` | Débannit un utilisateur |
+| `*mute @membre <minutes> [raison]` | `*m` | Timeout un membre |
+| `*unmute @membre` | `*um` | Retire le timeout |
+| `*userinfo [@membre]` | `*ui` | Infos d'un membre |
+| `*serverinfo` | `*si` | Infos du serveur |
+| `*avatar [@membre]` | `*av` | Affiche l'avatar en grand |
+| `*ping` | — | Latence du bot |
+| `*help` | `*h` | Liste toutes les commandes |
 
 ## Conseils face à des attaquants expérimentés
 
