@@ -95,7 +95,7 @@ Les commandes sont disponibles en **slash `/`** et en **préfixe `*`** (avec ali
 | `*unlockchannel [#salon]` | `*ulc` | Déverrouille un salon précis |
 | `*slowmode <secondes> [#salon]` | `*sm` | Définit le mode lent d'un salon |
 | `*stats` | `*st` | Statistiques du serveur |
-| `*embed` | `*em` | Formulaire simple (titre, texte, couleur) → envoie une image PNG stylée (texte non copiable) |
+| `*embed` | `*em` | Formulaire (titre, texte, couleur, image, footer) → annonce stylée et propre |
 | `*ai <message>` (ou mentionner le bot) | `*ask` | Discute avec l'IA du bot, accessible à tous les membres |
 | `*help` | `*h` | Liste paginée de toutes les commandes |
 
