@@ -83,7 +83,7 @@ const HELP_PAGES = [
       { cmd: '*unlockchannel [#salon]', alias: '*ulc', desc: 'Déverrouille un salon précis' },
       { cmd: '*slowmode <secondes> [#salon]', alias: '*sm', desc: 'Définit le mode lent d\'un salon' },
       { cmd: '*stats', alias: '*st', desc: 'Statistiques du serveur (arrivées/départs, warns...)' },
-      { cmd: '*embed', alias: '*em', desc: 'Ouvre un formulaire pour composer un message stylé (embed)' }
+      { cmd: '*embed', alias: '*em', desc: 'Éditeur interactif : titre, couleur, images, auteur, footer, champs' }
     ]
   }
 ];

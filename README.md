@@ -93,7 +93,7 @@ Les commandes sont disponibles en **slash `/`** et en **préfixe `*`** (avec ali
 | `*unlockchannel [#salon]` | `*ulc` | Déverrouille un salon précis |
 | `*slowmode <secondes> [#salon]` | `*sm` | Définit le mode lent d'un salon |
 | `*stats` | `*st` | Statistiques du serveur |
-| `*embed` | `*em` | Ouvre un formulaire (titre, description, couleur, image, footer) pour poster un message stylé |
+| `*embed` | `*em` | Éditeur interactif (aperçu en direct + boutons) : titre, texte, couleur, image, miniature, auteur, footer, champs personnalisés |
 | `*help` | `*h` | Liste paginée de toutes les commandes |
 
 ## Conseils face à des attaquants expérimentés
