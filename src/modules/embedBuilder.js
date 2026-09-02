@@ -75,34 +75,62 @@ function parseColor(raw) {
   return Number.isNaN(value) ? 0x5865f2 : value;
 }
 
+function isValidImageUrl(raw) {
+  if (!raw) return false;
+  try {
+    const url = new URL(raw.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function registerEmbedBuilder(client) {
   client.on('interactionCreate', async (interaction) => {
-    if (interaction.isButton() && interaction.customId === OPEN_EMBED_MODAL_BUTTON_ID) {
-      if (!interaction.member || !canManageBot(interaction.member)) {
-        await interaction.reply({ content: '⛔ Réservé aux administrateurs.', ephemeral: true });
+    try {
+      if (interaction.isButton() && interaction.customId === OPEN_EMBED_MODAL_BUTTON_ID) {
+        if (!interaction.member || !canManageBot(interaction.member)) {
+          await interaction.reply({ content: '⛔ Réservé aux administrateurs.', ephemeral: true });
+          return;
+        }
+        await interaction.showModal(buildEmbedModal());
         return;
       }
-      await interaction.showModal(buildEmbedModal());
-      return;
-    }
 
-    if (interaction.isModalSubmit() && interaction.customId === EMBED_MODAL_ID) {
-      const title = interaction.fields.getTextInputValue('title');
-      const description = interaction.fields.getTextInputValue('description');
-      const color = interaction.fields.getTextInputValue('color');
-      const image = interaction.fields.getTextInputValue('image');
-      const footer = interaction.fields.getTextInputValue('footer');
+      if (interaction.isModalSubmit() && interaction.customId === EMBED_MODAL_ID) {
+        const title = interaction.fields.getTextInputValue('title');
+        const description = interaction.fields.getTextInputValue('description');
+        const color = interaction.fields.getTextInputValue('color');
+        const image = interaction.fields.getTextInputValue('image').trim();
+        const footer = interaction.fields.getTextInputValue('footer');
 
-      const embed = new EmbedBuilder()
-        .setTitle(obfuscateText(title))
-        .setDescription(obfuscateText(description))
-        .setColor(parseColor(color))
-        .setTimestamp();
-      if (image) embed.setImage(image);
-      if (footer) embed.setFooter({ text: footer });
+        const embed = new EmbedBuilder()
+          .setTitle(obfuscateText(title))
+          .setDescription(obfuscateText(description))
+          .setColor(parseColor(color))
+          .setTimestamp();
 
-      await interaction.channel.send({ embeds: [embed] }).catch(() => null);
-      await interaction.reply({ content: '✅ Annonce envoyée.', ephemeral: true });
+        const imageProvided = image.length > 0;
+        const imageValid = isValidImageUrl(image);
+        if (imageValid) embed.setImage(image);
+        if (footer) embed.setFooter({ text: footer });
+
+        await interaction.channel.send({ embeds: [embed] });
+
+        if (imageProvided && !imageValid) {
+          await interaction.reply({
+            content: '✅ Annonce envoyée, mais le lien d\'image n\'était pas valide (doit commencer par `http://` ou `https://`) donc il a été ignoré.',
+            ephemeral: true
+          });
+        } else {
+          await interaction.reply({ content: '✅ Annonce envoyée.', ephemeral: true });
+        }
+      }
+    } catch (err) {
+      console.error('Erreur embed builder:', err);
+      if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: '❌ Une erreur est survenue lors de l\'envoi de l\'annonce.', ephemeral: true }).catch(() => null);
+      }
     }
   });
 }
