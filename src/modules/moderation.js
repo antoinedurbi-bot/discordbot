@@ -31,8 +31,15 @@ export async function purgeMessages(channel, { amount = 50, userId = null, all =
   return totalDeleted;
 }
 
-export async function setChannelLocked(channel, locked, reason) {
+// Verrouille/déverrouille un salon pour @everyone. Les comptes avec la permission Administrateur
+// passent toujours au travers (comportement natif Discord). allowRoles permet en plus de garder
+// l'accès à des rôles staff qui n'ont pas la permission Administrateur.
+export async function setChannelLocked(channel, locked, reason, allowRoles = []) {
   await channel.permissionOverwrites.edit(channel.guild.roles.everyone, { SendMessages: locked ? false : null }, { reason });
+
+  for (const role of allowRoles) {
+    await channel.permissionOverwrites.edit(role, { SendMessages: locked ? true : null }, { reason }).catch(() => null);
+  }
 }
 
 export async function setChannelSlowmode(channel, seconds) {

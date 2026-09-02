@@ -78,7 +78,7 @@ const HELP_PAGES = [
       { cmd: '*welcome off', desc: 'Désactive le message de bienvenue' },
       { cmd: '*leave #salon <message>', alias: '*lv', desc: 'Active un message de départ' },
       { cmd: '*autorole @role', alias: '*ar', desc: 'Attribue un rôle automatiquement à l\'arrivée' },
-      { cmd: '*lockchannel [#salon]', alias: '*lc', desc: 'Verrouille un salon précis' },
+      { cmd: '*lockchannel [#salon] [@rôles staff]', alias: '*lc', desc: 'Verrouille un salon (sauf admins + rôles précisés)' },
       { cmd: '*unlockchannel [#salon]', alias: '*ulc', desc: 'Déverrouille un salon précis' },
       { cmd: '*slowmode <secondes> [#salon]', alias: '*sm', desc: 'Définit le mode lent d\'un salon' },
       { cmd: '*stats', alias: '*st', desc: 'Statistiques du serveur (arrivées/départs, warns...)' }
@@ -608,14 +608,17 @@ export async function handlePrefixCommand(message) {
 
     case 'lockchannel': {
       const channel = message.mentions.channels.first() ?? message.channel;
-      await setChannelLocked(channel, true, `Verrouillé par ${author.tag}`);
-      await message.reply(`🔒 <#${channel.id}> verrouillé.`);
+      const allowRoles = [...message.mentions.roles.values()];
+      await setChannelLocked(channel, true, `Verrouillé par ${author.tag}`, allowRoles);
+      const extra = allowRoles.length ? ` (accès conservé pour ${allowRoles.map((r) => `<@&${r.id}>`).join(', ')})` : '';
+      await message.reply(`🔒 <#${channel.id}> verrouillé pour tout le monde sauf les administrateurs${extra}.`);
       break;
     }
 
     case 'unlockchannel': {
       const channel = message.mentions.channels.first() ?? message.channel;
-      await setChannelLocked(channel, false, `Déverrouillé par ${author.tag}`);
+      const allowRoles = [...message.mentions.roles.values()];
+      await setChannelLocked(channel, false, `Déverrouillé par ${author.tag}`, allowRoles);
       await message.reply(`🔓 <#${channel.id}> déverrouillé.`);
       break;
     }
