@@ -12,6 +12,7 @@ import {
 } from '../modules/moderation.js';
 import { buildVerificationMessage } from '../modules/verification.js';
 import { setRequire2FA } from '../modules/security.js';
+import { buildOpenEmbedButton } from '../modules/embedBuilder.js';
 import { canManageBot } from '../utils/permissions.js';
 
 const PREFIX = '*';
@@ -81,7 +82,8 @@ const HELP_PAGES = [
       { cmd: '*lockchannel [#salon] [@rôles staff]', alias: '*lc', desc: 'Verrouille un salon (sauf admins + rôles précisés)' },
       { cmd: '*unlockchannel [#salon]', alias: '*ulc', desc: 'Déverrouille un salon précis' },
       { cmd: '*slowmode <secondes> [#salon]', alias: '*sm', desc: 'Définit le mode lent d\'un salon' },
-      { cmd: '*stats', alias: '*st', desc: 'Statistiques du serveur (arrivées/départs, warns...)' }
+      { cmd: '*stats', alias: '*st', desc: 'Statistiques du serveur (arrivées/départs, warns...)' },
+      { cmd: '*embed', alias: '*em', desc: 'Ouvre un formulaire pour composer un message stylé (embed)' }
     ]
   }
 ];
@@ -123,7 +125,8 @@ const ALIASES = {
   lc: 'lockchannel',
   ulc: 'unlockchannel',
   sm: 'slowmode',
-  st: 'stats'
+  st: 'stats',
+  em: 'embed'
 };
 
 function usageError(message, text) {
@@ -632,6 +635,11 @@ export async function handlePrefixCommand(message) {
       }
       await setChannelSlowmode(channel, seconds);
       await message.reply(seconds === 0 ? `✅ Mode lent désactivé sur <#${channel.id}>.` : `✅ Mode lent réglé à ${seconds}s sur <#${channel.id}>.`);
+      break;
+    }
+
+    case 'embed': {
+      await message.reply(buildOpenEmbedButton());
       break;
     }
 
