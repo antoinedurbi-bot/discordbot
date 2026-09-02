@@ -13,6 +13,7 @@ import {
 import { buildVerificationMessage } from '../modules/verification.js';
 import { setRequire2FA } from '../modules/security.js';
 import { buildOpenEmbedButton } from '../modules/embedBuilder.js';
+import { askAI } from '../modules/aiChat.js';
 import { canManageBot } from '../utils/permissions.js';
 
 const PREFIX = '*';
@@ -52,6 +53,7 @@ const HELP_PAGES = [
       { cmd: '*serverinfo', alias: '*si', desc: 'Affiche les infos du serveur' },
       { cmd: '*avatar [@membre]', alias: '*av', desc: 'Affiche l\'avatar en grand' },
       { cmd: '*ping', desc: 'Affiche la latence du bot' },
+      { cmd: '*ai <message>', alias: '*ask', desc: 'Discute avec l\'IA du bot (ou mentionne le bot @Bot)' },
       { cmd: '*help', alias: '*h', desc: 'Affiche cette aide' }
     ]
   },
@@ -126,7 +128,8 @@ const ALIASES = {
   ulc: 'unlockchannel',
   sm: 'slowmode',
   st: 'stats',
-  em: 'embed'
+  em: 'embed',
+  ask: 'ai'
 };
 
 function usageError(message, text) {
@@ -184,6 +187,16 @@ export async function handlePrefixCommand(message) {
     collector.on('end', () => {
       reply.edit({ components: [] }).catch(() => null);
     });
+    return;
+  }
+
+  if (command === 'ai') {
+    const prompt = args.join(' ');
+    if (!prompt) {
+      await usageError(message, 'Usage : `*ai <ta question>`');
+      return;
+    }
+    await askAI(message, prompt);
     return;
   }
 

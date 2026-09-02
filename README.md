@@ -18,6 +18,7 @@ Bot de protection anti-raid / anti-nuke / anti-spam pour Discord, conçu pour r�
 - **Modération de salon** : lock/unlock et slowmode ciblés sur un salon précis.
 - **Snipe** : retrouve le dernier message supprimé/édité d'un salon.
 - **Statistiques** : arrivées/départs du jour, nombre de warns et d'incidents de sécurité.
+- **Chat IA** : discute avec le bot (Claude) via `*ai <message>` ou en le mentionnant, avec mémoire de conversation par salon.
 - **Logs de sécurité** : toutes les alertes sont envoyées dans un salon dédié et conservées en historique.
 
 ## Installation
@@ -32,6 +33,7 @@ Renseigne dans `.env` :
 - `CLIENT_ID` : ID de l'application
 - `GUILD_ID` : ID de ton serveur (déploiement instantané des commandes, recommandé)
 - `OWNER_IDS` : tes IDs Discord (séparés par des virgules) — toujours protégés
+- `ANTHROPIC_API_KEY` (optionnel) : clé API [console.anthropic.com](https://console.anthropic.com) pour activer le chat IA (`*ai`)
 
 ### Permissions et intents requis
 
@@ -94,6 +96,7 @@ Les commandes sont disponibles en **slash `/`** et en **préfixe `*`** (avec ali
 | `*slowmode <secondes> [#salon]` | `*sm` | Définit le mode lent d'un salon |
 | `*stats` | `*st` | Statistiques du serveur |
 | `*embed` | `*em` | Éditeur interactif (aperçu en direct + boutons) : titre, texte, couleur, image, miniature, auteur, footer, champs personnalisés |
+| `*ai <message>` (ou mentionner le bot) | `*ask` | Discute avec l'IA du bot, accessible à tous les membres |
 | `*help` | `*h` | Liste paginée de toutes les commandes |
 
 ## Conseils face à des attaquants expérimentés

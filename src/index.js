@@ -9,6 +9,7 @@ import { registerAntiPhishing } from './modules/antiPhishing.js';
 import { registerVerification } from './modules/verification.js';
 import { registerWelcome } from './modules/welcome.js';
 import { registerEmbedBuilder } from './modules/embedBuilder.js';
+import { registerAiChat } from './modules/aiChat.js';
 import { handleInteraction } from './commands/index.js';
 import { handlePrefixCommand } from './commands/prefix.js';
 import { store } from './store.js';
@@ -41,6 +42,7 @@ registerAntiPhishing(client);
 registerVerification(client);
 registerWelcome(client);
 registerEmbedBuilder(client);
+registerAiChat(client);
 
 client.on('interactionCreate', (interaction) => {
   handleInteraction(interaction).catch((err) => console.error('Erreur interaction:', err));
