@@ -8,6 +8,7 @@ import {
   TextInputStyle
 } from 'discord.js';
 import { canManageBot } from '../utils/permissions.js';
+import { renderEmbedImage } from './embedImage.js';
 
 export const OPEN_EMBED_MODAL_BUTTON_ID = 'protectbot_open_embed_modal';
 
@@ -22,6 +23,7 @@ const BTN_EDIT_AUTHORFOOTER = 'protectbot_edit_authorfooter';
 const BTN_ADD_FIELD = 'protectbot_add_field';
 const BTN_CLEAR_FIELDS = 'protectbot_clear_fields';
 const BTN_SEND = 'protectbot_send_embed';
+const BTN_SEND_IMAGE = 'protectbot_send_embed_image';
 const BTN_CANCEL = 'protectbot_cancel_embed';
 
 const MAX_FIELDS = 10;
@@ -82,7 +84,8 @@ function buildPreviewRows(draft) {
     new ButtonBuilder().setCustomId(BTN_CLEAR_FIELDS).setLabel('🗑️ Vider les champs').setStyle(ButtonStyle.Secondary).setDisabled(!draft.fields.length)
   );
   const row3 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(BTN_SEND).setLabel('📤 Envoyer').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(BTN_SEND).setLabel('📤 Envoyer (embed)').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(BTN_SEND_IMAGE).setLabel('🖼️ Envoyer en image').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId(BTN_CANCEL).setLabel('Annuler').setStyle(ButtonStyle.Danger)
   );
   return [row1, row2, row3];
@@ -205,6 +208,18 @@ export function registerEmbedBuilder(client) {
         if (interaction.customId === BTN_SEND) {
           await interaction.channel.send({ embeds: [buildPreviewEmbed(draft)] }).catch(() => null);
           await interaction.update({ content: '✅ Message envoyé.', embeds: [], components: [] });
+          drafts.delete(interaction.message.id);
+          return;
+        }
+        if (interaction.customId === BTN_SEND_IMAGE) {
+          try {
+            const buffer = renderEmbedImage(draft);
+            await interaction.channel.send({ files: [{ attachment: buffer, name: 'message.png' }] });
+            await interaction.update({ content: '✅ Image envoyée (texte non copiable).', embeds: [], components: [] });
+          } catch (err) {
+            console.error('Erreur rendu image embed:', err.message);
+            await interaction.reply({ content: '❌ Échec de la génération de l\'image.', ephemeral: true });
+          }
           drafts.delete(interaction.message.id);
           return;
         }
